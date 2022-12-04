@@ -1,0 +1,13 @@
+.item {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.item button {
+  align-self: center;
+  margin-left: auto;
+}
+
+ul {
+  width: 500px;
+}
