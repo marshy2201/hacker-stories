@@ -4,7 +4,7 @@ import {
   useReducer,
   useCallback 
 } from 'react'
-import './App.css';
+import styles from './App.module.css';
 import axios from 'axios';
 
 const API_ENDPOINT = 'https://hn.algolia.com/api/v1/search?query=';
@@ -103,15 +103,14 @@ const App = () => {
   }
 
   return (
-    <div>
-      <h1>My Hacker Stories</h1>
+    <div className={styles.container}>
+      <h1 className={styles.headlinePrimary}>My Hacker Stories</h1>
 
       <SearchForm
         searchTerm={searchTerm}
         onSearchSubmit={handleSearchSubmit}
         onSearchInput={handleSearchInput}
       />
-      <hr />
 
       {stories.isError && <p>Something went wrong...</p>}
 
@@ -132,13 +131,14 @@ const InputWithLabel = ({
   children 
 }) => (
   <>
-    <label htmlFor={id}>{children}</label>
+    <label htmlFor={id} className={styles.label}>{children}</label>
     &nbsp;
     <input 
      id={id}
      onChange={onInputChange} 
      value={value}
      autoFocus={isFocused}
+     className={styles.input}
     />
   </>
 );
@@ -156,15 +156,14 @@ const List = ({ list, onRemoveItem }) => (
 );
 
 const Item = ({ item, onRemoveItem }) => (
-  <li className="item">
-    {item.title}
-    <ul>
-      <li><a href={item.url}>{item.url}</a></li>
-      <li><strong>Author:</strong> {item.author}</li>
-      <li><strong>Comments:</strong> {item.num_comments}</li>
-      <li><strong>Points:</strong> {item.points}</li>
-    </ul>
-    <button onClick={() => onRemoveItem(item)}>X</button>
+  <li className={styles.item}>
+    <span style={{ width: '40%'}}><a href={item.url}>{item.title}</a></span>
+    <span style={{ width: '30%'}}><strong>Author:</strong> {item.author}</span>
+    <span style={{ width: '10%'}}><strong>Comments:</strong> {item.num_comments}</span>
+    <span style={{ width: '10%'}}><strong>Points:</strong> {item.points}</span>
+    <span style={{ width: '10%'}}>
+      <button onClick={() => onRemoveItem(item)} className={`${styles.button} ${styles.button_small}`}>Dismiss</button>
+    </span>
   </li>
 );
 
@@ -173,7 +172,7 @@ const SearchForm = ({
   onSearchInput,
   onSearchSubmit
 }) => (
-  <form onSubmit={onSearchSubmit}>
+  <form onSubmit={onSearchSubmit} className={styles.searchForm}>
     <InputWithLabel 
       id="search"
       value={searchTerm} 
@@ -183,7 +182,7 @@ const SearchForm = ({
       <strong>Search:</strong>
     </InputWithLabel>
 
-    <button type="button" disabled={!searchTerm}>Submit</button>
+    <button type="button" disabled={!searchTerm} className={`${styles.button} ${styles.button_large}`}>Submit</button>
   </form>
 )
 
