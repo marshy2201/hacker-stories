@@ -4,7 +4,8 @@ import {
   useReducer,
   useCallback 
 } from 'react'
-import './App.css'
+import './App.css';
+import axios from 'axios';
 
 const API_ENDPOINT = 'https://hn.algolia.com/api/v1/search?query=';
 
@@ -65,14 +66,14 @@ const App = () => {
   const handleFetchStories = useCallback(() => {
     if (!searchTerm) return;
 
-    dispatchStories({ type: 'STORIES_FETCH_INIT' })
+    dispatchStories({ type: 'STORIES_FETCH_INIT' });
 
-    fetch(url).
-      then(resp => resp.json() ).
+    axios.
+      get(url).
       then(result => {
         dispatchStories({
           type: 'STORIES_FETCH_SUCCESS', 
-          payload: result.hits
+          payload: result.data.hits
         });
       }).
       catch(() => dispatchStories({ type: 'STORIES_FETCH_FAILURE' }));
@@ -94,7 +95,7 @@ const App = () => {
   }
 
   // handle search submit
-  const handleSearchSubmit = () => setUrl(`${API_ENDPOINT}${searchTerm}`)
+  const handleSearchSubmit = () => setUrl(`${API_ENDPOINT}${searchTerm}`);
 
   return (
     <div>
@@ -113,7 +114,9 @@ const App = () => {
         type="button"
         disabled={!searchTerm}
         onClick={handleSearchSubmit}
-      >Submit</button>
+      >
+        Submit
+      </button>
       <hr />
 
       {stories.isError && <p>Something went wrong...</p>}
