@@ -40,8 +40,8 @@
 }
 
 .button:hover {
-  background: #171212;
-  color: #fff;
+  fill: #fff;
+  stroke: #fff;
 }
 
 .button_small {
