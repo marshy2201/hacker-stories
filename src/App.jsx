@@ -185,7 +185,7 @@ const SearchForm = ({
       <strong>Search:</strong>
     </InputWithLabel>
 
-    <button type="button" disabled={!searchTerm} className={`${styles.button} ${styles.button_large}`}>Submit</button>
+    <button type="submit" disabled={!searchTerm} className={`${styles.button} ${styles.button_large}`}>Submit</button>
   </form>
 )
 
