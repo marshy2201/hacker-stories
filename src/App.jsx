@@ -2,7 +2,10 @@ import {
   useState, 
   useEffect, 
   useReducer,
-  useCallback 
+  useCallback, 
+  useRef,
+  memo,
+  useMemo
 } from 'react'
 import styles from './App.module.css';
 import axios from 'axios';
@@ -11,13 +14,19 @@ import { ReactComponent as Check } from './check.svg';
 const API_ENDPOINT = 'https://hn.algolia.com/api/v1/search?query=';
 
 const useStorageState = (key, initialState) => {
+  const isMounted = useRef(false);
+
   const [value, setValue] = useState(
     localStorage.getItem(key) ?? initialState
   );
 
   // update local storage when value changes
   useEffect(() => {
-    localStorage.setItem(key, value);
+    if (!isMounted.current) {
+      isMounted.current = true;
+    } else {
+      localStorage.setItem(key, value);
+    }
   }, [value, key]);
 
   return [value, setValue];
@@ -52,6 +61,12 @@ const storiesReducer = (state, action) => {
     default:
       throw new Error();
   }
+}
+
+const getSumComments = (stories) => {
+  console.log('comments total render');
+
+  return stories.data.reduce((result, value) => result + value.num_comments, 0);
 }
 
 const App = () => {
@@ -89,12 +104,12 @@ const App = () => {
   const handleSearchInput = (e) => setSearchTerm(e.target.value);
 
   // remove story
-  const handleRemoveStory = (item) => {
+  const handleRemoveStory = useCallback((item) => {
     dispatchStories({
       type: 'REMOVE_STORY', 
       payload: item
     });
-  }
+  }, []);
 
   // handle search submit
   const handleSearchSubmit = (event) => {
@@ -103,9 +118,16 @@ const App = () => {
     event.preventDefault();
   }
 
+  console.log('B:App')
+
+  const sumComments = useMemo(
+    () => getSumComments(stories),
+    [stories]
+  );
+
   return (
     <div className={styles.container}>
-      <h1 className={styles.headlinePrimary}>My Hacker Stories</h1>
+      <h1 className={styles.headlinePrimary}>My Hacker Stories with {sumComments} comments.</h1>
 
       <SearchForm
         searchTerm={searchTerm}
@@ -144,30 +166,35 @@ const InputWithLabel = ({
   </>
 );
 
-const List = ({ list, onRemoveItem }) => (
-  <ul>
-    {list.map(item => (
-      <Item 
-        key={item.objectID} 
-        item={item} 
-        onRemoveItem={onRemoveItem} 
-      />
-    ))}
-  </ul>
+const List = memo(
+  ({ list, onRemoveItem }) => 
+    console.log('B:List') || (
+      <ul>
+        {list.map(item => (
+          <Item 
+            key={item.objectID} 
+            item={item} 
+            onRemoveItem={onRemoveItem} 
+          />
+        ))}
+      </ul>
+  )
 );
 
-const Item = ({ item, onRemoveItem }) => (
-  <li className={styles.item}>
-    <span style={{ width: '40%'}}><a href={item.url}>{item.title}</a></span>
-    <span style={{ width: '30%'}}><strong>Author:</strong> {item.author}</span>
-    <span style={{ width: '10%'}}><strong>Comments:</strong> {item.num_comments}</span>
-    <span style={{ width: '10%'}}><strong>Points:</strong> {item.points}</span>
-    <span style={{ width: '10%'}}>
-      <button onClick={() => onRemoveItem(item)} className={`${styles.button} ${styles.button_small}`}>
-        <Check height="18px" width="18px" />
-      </button>
-    </span>
-  </li>
+const Item = memo(
+  ({ item, onRemoveItem }) => console.log('item render') || (
+    <li className={styles.item}>
+      <span style={{ width: '40%'}}><a href={item.url}>{item.title}</a></span>
+      <span style={{ width: '30%'}}><strong>Author:</strong> {item.author}</span>
+      <span style={{ width: '10%'}}><strong>Comments:</strong> {item.num_comments}</span>
+      <span style={{ width: '10%'}}><strong>Points:</strong> {item.points}</span>
+      <span style={{ width: '10%'}}>
+        <button onClick={() => onRemoveItem(item)} className={`${styles.button} ${styles.button_small}`}>
+          <Check height="18px" width="18px" />
+        </button>
+      </span>
+    </li>
+  )
 );
 
 const SearchForm = ({
