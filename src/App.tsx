@@ -3,27 +3,17 @@ import {
   useEffect, 
   useReducer,
   useCallback,
-  FC,
   ChangeEvent,
-  FormEvent,
-  ReactNode
+  FormEvent
 } from 'react'
 import styles from './App.module.css';
 import axios from 'axios';
-import { ReactComponent as Check } from './check.svg';
+import List from './List';
+import SearchForm from './SearchForm';
+import { Story } from './types';
+import storiesReducer from './reducer';
 
 const API_ENDPOINT = 'https://hn.algolia.com/api/v1/search?query=';
-
-type Story = {
-  objectID: string;
-  url: string;
-  title: string;
-  author: string;
-  num_comments: number;
-  points: number;
-}
-
-type Stories = Story[];
 
 const useStorageState = (
   key: string, 
@@ -39,70 +29,6 @@ const useStorageState = (
   }, [value, key]);
 
   return [value, setValue];
-}
-
-type StoriesState = {
-  data: Stories;
-  isLoading: boolean;
-  isError: boolean;
-}
-
-type StoriesFetchInitAction = {
-  type: 'STORIES_FETCH_INIT'
-}
-
-type StoriesFetchSuccessAction = {
-  type: 'STORIES_FETCH_SUCCESS';
-  payload: Stories
-}
-
-type StoriesFetchFailureAction = {
-  type: 'STORIES_FETCH_FAILURE'
-}
-
-type StoriesRemoveAction = {
-  type: 'REMOVE_STORY';
-  payload: Story
-}
-
-type StoriesAction = 
-  StoriesFetchInitAction
-  | StoriesFetchSuccessAction
-  | StoriesFetchFailureAction
-  | StoriesRemoveAction;
-
-const storiesReducer = (
-  state: StoriesState, 
-  action: StoriesAction
-) => {
-  switch (action.type) {
-    case 'STORIES_FETCH_INIT':
-      return {
-        ...state,
-        isLoading: true,
-        isError: false
-      };
-    case 'STORIES_FETCH_SUCCESS':
-      return {
-        ...state,
-        isLoading: false,
-        isError: false,
-        data: action.payload
-      };
-    case 'STORIES_FETCH_FAILURE':
-      return {
-        ...state,
-        isLoading: false,
-        isError: true
-      };
-    case 'REMOVE_STORY':
-      return {
-        ...state,
-        data: state.data.filter(story => story.objectID !== action.payload.objectID)
-      };
-    default:
-      throw new Error();
-  }
 }
 
 const App = () => {
@@ -174,95 +100,5 @@ const App = () => {
     </div>
   );
 };
-
-type InputWithLabelProps = {
-  id: string;
-  value: string;
-  type?: string;
-  onInputChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  isFocused?: boolean;
-  children: ReactNode
-}
-
-const InputWithLabel: FC<InputWithLabelProps> = ({ 
-  id, 
-  value, 
-  onInputChange,
-  isFocused, 
-  children 
-}) => (
-  <>
-    <label htmlFor={id} className={styles.label}>{children}</label>
-    &nbsp;
-    <input 
-     id={id}
-     onChange={onInputChange} 
-     value={value}
-     autoFocus={isFocused}
-     className={styles.input}
-    />
-  </>
-);
-
-type ListProps = {
-  list: Stories;
-  onRemoveItem: (item: Story) => void 
-}
-
-const List: FC<ListProps> = ({ list, onRemoveItem }) => (
-  <ul>
-    {list.map(item => (
-      <Item 
-        key={item.objectID} 
-        item={item} 
-        onRemoveItem={onRemoveItem} 
-      />
-    ))}
-  </ul>
-);
-
-type ItemProps = {
-  item: Story;
-  onRemoveItem: (item: Story) => void;
-}
-
-const Item: FC<ItemProps> = ({ item, onRemoveItem }) => (
-  <li className={styles.item}>
-    <span style={{ width: '40%'}}><a href={item.url}>{item.title}</a></span>
-    <span style={{ width: '30%'}}><strong>Author:</strong> {item.author}</span>
-    <span style={{ width: '10%'}}><strong>Comments:</strong> {item.num_comments}</span>
-    <span style={{ width: '10%'}}><strong>Points:</strong> {item.points}</span>
-    <span style={{ width: '10%'}}>
-      <button onClick={() => onRemoveItem(item)} className={`${styles.button} ${styles.button_small}`}>
-        <Check height="18px" width="18px" />
-      </button>
-    </span>
-  </li>
-);
-
-type SearchFormProps = {
-  searchTerm: string;
-  onSearchInput: (event: ChangeEvent<HTMLInputElement>) => void;
-  onSearchSubmit: (event: FormEvent<HTMLFormElement>) => void;
-};
-
-const SearchForm: FC<SearchFormProps> = ({
-  searchTerm,
-  onSearchInput,
-  onSearchSubmit
-}) => (
-  <form onSubmit={onSearchSubmit} className={styles.searchForm}>
-    <InputWithLabel 
-      id="search"
-      value={searchTerm} 
-      onInputChange={onSearchInput}
-      isFocused={true}
-    >
-      <strong>Search:</strong>
-    </InputWithLabel>
-
-    <button type="submit" disabled={!searchTerm} className={`${styles.button} ${styles.button_large}`}>Submit</button>
-  </form>
-)
 
 export default App;
