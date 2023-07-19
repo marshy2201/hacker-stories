@@ -2,7 +2,11 @@ import {
   useState, 
   useEffect, 
   useReducer,
-  useCallback 
+  useCallback,
+  FC,
+  ChangeEvent,
+  FormEvent,
+  ReactNode
 } from 'react'
 import styles from './App.module.css';
 import axios from 'axios';
@@ -10,7 +14,21 @@ import { ReactComponent as Check } from './check.svg';
 
 const API_ENDPOINT = 'https://hn.algolia.com/api/v1/search?query=';
 
-const useStorageState = (key, initialState) => {
+type Story = {
+  objectID: string;
+  url: string;
+  title: string;
+  author: string;
+  num_comments: number;
+  points: number;
+}
+
+type Stories = Story[];
+
+const useStorageState = (
+  key: string, 
+  initialState: string
+): [string, (newValue: string) => void] => {
   const [value, setValue] = useState(
     localStorage.getItem(key) ?? initialState
   );
@@ -23,7 +41,40 @@ const useStorageState = (key, initialState) => {
   return [value, setValue];
 }
 
-const storiesReducer = (state, action) => {
+type StoriesState = {
+  data: Stories;
+  isLoading: boolean;
+  isError: boolean;
+}
+
+type StoriesFetchInitAction = {
+  type: 'STORIES_FETCH_INIT'
+}
+
+type StoriesFetchSuccessAction = {
+  type: 'STORIES_FETCH_SUCCESS';
+  payload: Stories
+}
+
+type StoriesFetchFailureAction = {
+  type: 'STORIES_FETCH_FAILURE'
+}
+
+type StoriesRemoveAction = {
+  type: 'REMOVE_STORY';
+  payload: Story
+}
+
+type StoriesAction = 
+  StoriesFetchInitAction
+  | StoriesFetchSuccessAction
+  | StoriesFetchFailureAction
+  | StoriesRemoveAction;
+
+const storiesReducer = (
+  state: StoriesState, 
+  action: StoriesAction
+) => {
   switch (action.type) {
     case 'STORIES_FETCH_INIT':
       return {
@@ -86,10 +137,10 @@ const App = () => {
   }, [handleFetchStories]);
 
   // update the search term field
-  const handleSearchInput = (e) => setSearchTerm(e.target.value);
+  const handleSearchInput = (e: ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value);
 
   // remove story
-  const handleRemoveStory = (item) => {
+  const handleRemoveStory = (item: Story) => {
     dispatchStories({
       type: 'REMOVE_STORY', 
       payload: item
@@ -97,10 +148,10 @@ const App = () => {
   }
 
   // handle search submit
-  const handleSearchSubmit = (event) => {
+  const handleSearchSubmit = (e: FormEvent<HTMLFormElement>) => {
     setUrl(`${API_ENDPOINT}${searchTerm}`)
   
-    event.preventDefault();
+    e.preventDefault();
   }
 
   return (
@@ -124,7 +175,16 @@ const App = () => {
   );
 };
 
-const InputWithLabel = ({ 
+type InputWithLabelProps = {
+  id: string;
+  value: string;
+  type?: string;
+  onInputChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  isFocused?: boolean;
+  children: ReactNode
+}
+
+const InputWithLabel: FC<InputWithLabelProps> = ({ 
   id, 
   value, 
   onInputChange,
@@ -144,7 +204,12 @@ const InputWithLabel = ({
   </>
 );
 
-const List = ({ list, onRemoveItem }) => (
+type ListProps = {
+  list: Stories;
+  onRemoveItem: (item: Story) => void 
+}
+
+const List: FC<ListProps> = ({ list, onRemoveItem }) => (
   <ul>
     {list.map(item => (
       <Item 
@@ -156,7 +221,12 @@ const List = ({ list, onRemoveItem }) => (
   </ul>
 );
 
-const Item = ({ item, onRemoveItem }) => (
+type ItemProps = {
+  item: Story;
+  onRemoveItem: (item: Story) => void;
+}
+
+const Item: FC<ItemProps> = ({ item, onRemoveItem }) => (
   <li className={styles.item}>
     <span style={{ width: '40%'}}><a href={item.url}>{item.title}</a></span>
     <span style={{ width: '30%'}}><strong>Author:</strong> {item.author}</span>
@@ -170,7 +240,13 @@ const Item = ({ item, onRemoveItem }) => (
   </li>
 );
 
-const SearchForm = ({
+type SearchFormProps = {
+  searchTerm: string;
+  onSearchInput: (event: ChangeEvent<HTMLInputElement>) => void;
+  onSearchSubmit: (event: FormEvent<HTMLFormElement>) => void;
+};
+
+const SearchForm: FC<SearchFormProps> = ({
   searchTerm,
   onSearchInput,
   onSearchSubmit
