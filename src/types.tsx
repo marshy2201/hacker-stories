@@ -31,10 +31,16 @@ type SearchFormProps = {
   onSearchSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
 
+type LastSearchesProps = {
+  lastSearches: string[],
+  onLastSearch: (searchTerm: string) => void
+}
+
 export type { 
   Story,
   Stories,
   ItemProps,
   InputWithLabelProps,
-  SearchFormProps
+  SearchFormProps,
+  LastSearchesProps
 };

@@ -12,6 +12,7 @@ import List from './List';
 import SearchForm from './SearchForm';
 import { Story } from './types';
 import storiesReducer from './reducer';
+import LastSearches from './LastSearches';
 
 const API_ENDPOINT = 'https://hn.algolia.com/api/v1/search?query=';
 
@@ -31,6 +32,28 @@ const useStorageState = (
   return [value, setValue];
 }
 
+const getLastSearches = (urls: string[]) => 
+  urls
+    .reduce((result, url, index) => {
+      const searchTerm: any = url.replace(API_ENDPOINT, '');
+
+      if (index === 0) {
+        return result.concat(searchTerm);
+      }
+
+      const previousSearchTerm = result[result.length - 1];
+
+      if (searchTerm === previousSearchTerm) {
+        return result;
+      } else {
+        return result.concat(searchTerm);
+      }
+    }, [])
+    .slice(-6)
+    .slice(0, -1);
+
+const getUrl = (searchTerm: string) => `${API_ENDPOINT}${searchTerm}`;
+
 const App = () => {
   const [stories, dispatchStories] = useReducer(
     storiesReducer, 
@@ -38,7 +61,7 @@ const App = () => {
   );
 
   const [searchTerm, setSearchTerm] = useStorageState('search', 'react');
-  const [url, setUrl] = useState(`${API_ENDPOINT}${searchTerm}`);
+  const [urls, setUrls] = useState([getUrl(searchTerm)]);
 
   // memorized function
   const handleFetchStories = useCallback(async () => {
@@ -47,7 +70,8 @@ const App = () => {
     dispatchStories({ type: 'STORIES_FETCH_INIT' });
     
     try {
-      const result = await axios.get(url);
+      const lastUrl = urls[urls.length - 1];
+      const result = await axios.get(lastUrl);
 
       dispatchStories({
         type: 'STORIES_FETCH_SUCCESS', 
@@ -56,7 +80,7 @@ const App = () => {
     } catch (err) {
       dispatchStories({ type: 'STORIES_FETCH_FAILURE' })
     }
-  }, [url]);
+  }, [urls]);
 
   useEffect(() => {
     handleFetchStories();
@@ -73,12 +97,24 @@ const App = () => {
     });
   }
 
+  const handleSearch = (searchTerm: string) => {
+    const url = getUrl(searchTerm);
+    setUrls(urls.concat(url));
+  }
+
   // handle search submit
   const handleSearchSubmit = (e: FormEvent<HTMLFormElement>) => {
-    setUrl(`${API_ENDPOINT}${searchTerm}`)
+    handleSearch(searchTerm);
   
     e.preventDefault();
   }
+
+  const handleLastSearch = (searchTerm: string) => {
+    handleSearch(searchTerm);
+    setSearchTerm(searchTerm);
+  }
+
+  const lastSearches = getLastSearches(urls);
 
   return (
     <div className={styles.container}>
@@ -89,6 +125,13 @@ const App = () => {
         onSearchSubmit={handleSearchSubmit}
         onSearchInput={handleSearchInput}
       />
+
+      <LastSearches 
+        lastSearches={lastSearches}
+        onLastSearch={handleLastSearch}
+      />
+
+      <hr />
 
       {stories.isError && <p>Something went wrong...</p>}
 
