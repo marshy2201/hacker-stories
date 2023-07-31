@@ -4,6 +4,7 @@ type StoriesState = {
   data: Stories;
   isLoading: boolean;
   isError: boolean;
+  page: number
 }
 
 type StoriesFetchInitAction = {
@@ -12,7 +13,10 @@ type StoriesFetchInitAction = {
 
 type StoriesFetchSuccessAction = {
   type: 'STORIES_FETCH_SUCCESS';
-  payload: Stories
+  payload: {
+    list: Stories,
+    page: number
+  }
 }
 
 type StoriesFetchFailureAction = {
@@ -46,7 +50,11 @@ const storiesReducer = (
         ...state,
         isLoading: false,
         isError: false,
-        data: action.payload
+        data: 
+          action.payload.page === 0 
+            ? action.payload.list
+            : state.data.concat(action.payload.list),
+        page: action.payload.page
       };
     case 'STORIES_FETCH_FAILURE':
       return {

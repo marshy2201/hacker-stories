@@ -14,7 +14,12 @@ import { Story } from './types';
 import storiesReducer from './reducer';
 import LastSearches from './LastSearches';
 
-const API_ENDPOINT = 'https://hn.algolia.com/api/v1/search?query=';
+const API_BASE = 'https://hn.algolia.com/api/v1';
+const API_SEARCH = '/search';
+const PARAM_SEARCH = 'query=';
+const PARAM_PAGE = 'page=';
+
+const getUrl = (searchTerm: string, page: number) => `${API_BASE}${API_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}`;
 
 const useStorageState = (
   key: string, 
@@ -34,8 +39,10 @@ const useStorageState = (
 
 const getLastSearches = (urls: string[]) => 
   urls
-    .reduce((result, url, index) => {
-      const searchTerm: any = url.replace(API_ENDPOINT, '');
+    .reduce((result: string[], url, index) => {
+      const searchTerm = url
+                          .substring(url.lastIndexOf('?') + 1, url.lastIndexOf('&'))
+                          .replace(PARAM_SEARCH, '');
 
       if (index === 0) {
         return result.concat(searchTerm);
@@ -52,16 +59,14 @@ const getLastSearches = (urls: string[]) =>
     .slice(-6)
     .slice(0, -1);
 
-const getUrl = (searchTerm: string) => `${API_ENDPOINT}${searchTerm}`;
-
 const App = () => {
   const [stories, dispatchStories] = useReducer(
     storiesReducer, 
-    { data: [], isLoading: false, isError: false }
+    { data: [], page: 0, isLoading: false, isError: false }
   );
 
   const [searchTerm, setSearchTerm] = useStorageState('search', 'react');
-  const [urls, setUrls] = useState([getUrl(searchTerm)]);
+  const [urls, setUrls] = useState([getUrl(searchTerm, 0)]);
 
   // memorized function
   const handleFetchStories = useCallback(async () => {
@@ -75,7 +80,10 @@ const App = () => {
 
       dispatchStories({
         type: 'STORIES_FETCH_SUCCESS', 
-        payload: result.data.hits
+        payload: {
+          list: result.data.hits,
+          page: result.data.page
+        }
       });
     } catch (err) {
       dispatchStories({ type: 'STORIES_FETCH_FAILURE' })
@@ -97,21 +105,30 @@ const App = () => {
     });
   }
 
-  const handleSearch = (searchTerm: string) => {
-    const url = getUrl(searchTerm);
+  const handleSearch = (searchTerm: string, page: number) => {
+    const url = getUrl(searchTerm, page);
     setUrls(urls.concat(url));
   }
 
   // handle search submit
   const handleSearchSubmit = (e: FormEvent<HTMLFormElement>) => {
-    handleSearch(searchTerm);
+    handleSearch(searchTerm, 0);
   
     e.preventDefault();
   }
 
   const handleLastSearch = (searchTerm: string) => {
-    handleSearch(searchTerm);
+    handleSearch(searchTerm, 0);
     setSearchTerm(searchTerm);
+  }
+
+  const handleMore = () => {
+    const lastUrl = urls[urls.length - 1];
+    const searchTerm = lastUrl
+                            .substring(lastUrl.lastIndexOf('?') + 1, lastUrl.lastIndexOf('&'))
+                            .replace(PARAM_SEARCH, '');
+
+    handleSearch(searchTerm, stories.page + 1);
   }
 
   const lastSearches = getLastSearches(urls);
@@ -135,10 +152,12 @@ const App = () => {
 
       {stories.isError && <p>Something went wrong...</p>}
 
+      <List list={stories.data} onRemoveItem={handleRemoveStory} />
+
       {stories.isLoading ? (
         <p>Loading...</p>
       ) : (
-        <List list={stories.data} onRemoveItem={handleRemoveStory} />
+        <button type="button" onClick={handleMore}>More</button>
       )}
     </div>
   );
